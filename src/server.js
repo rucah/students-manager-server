@@ -6,8 +6,10 @@ const mysql = require('mysql')
 
 const db = require('./db');
 
-const PORT = normalizePort(process.env.OPENSHIFT_NODEJS_PORT || '3000');
-const IP = process.env.OPENSHIFT_NODEJS_IP || '127.0.0.1';
+// const PORT = normalizePort(process.env.OPENSHIFT_NODEJS_PORT || '3000');
+const PORT = normalizePort(process.env.PORT || process.env.OPENSHIFT_NODEJS_PORT ||'3000');
+// const IP = process.env.OPENSHIFT_NODEJS_IP || '127.0.0.1';
+const IP = process.env.IP || '0.0.0.0';
 
 const corsOptions = {
     origin: '*',
