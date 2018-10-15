@@ -1,6 +1,7 @@
 
 
 const mysql = require('mysql');
+const isEmpty = require('lodash/isEmpty');
 
 const pool = mysql.createPool({
     connectionLimit : 10,
@@ -38,12 +39,62 @@ const getUser = ({ username, password }, callback) => {
     });
 };
 
-const getStudents = ({}, callback) => {
+const getStudents = (filters, callback) => {
+    const { page, pageSize, musicality, cluster } = filters;
+    let query = `Select s.id, name, citizen_number AS citizenNumber, nationality, contacts, responsible, musicality, comments, c.value as cluster
+    From students s
+    Join classes c On c.id = s.class_id
+    Where 1 = 1`;
+
+    if(cluster) {
+        query = query + ` And s.class_id = ${cluster}`;
+    }
+
+    if(!isEmpty(musicality)) {
+        query = query + ` And s.musicality = ${musicality}`;
+    }
+
+    // it shall be ordered by name
+    query = query + ' Order By id';
+
+    if(page && pageSize) {
+        const limitFrom = (page - 0)  * pageSize;
+        query = query + ` Limit ${limitFrom}, ${pageSize}`;
+    }
+
     connect((connection) => {
         connection.query(
-            `Select s.id, name, citizen_number AS citizenNumber, nationality, contacts, responsible, musicality, comments, c.value as class
-            From students s
-            Join classes c On c.id = s.class_id`, (err, rows, fields) => {
+            query
+            , (err, rows, fields) => {
+            
+                if (err) {
+                throw err;
+            }
+            
+            callback(rows);
+        });
+    });
+};
+
+const countStudents = (filters, callback) => {
+    const { musicality, cluster } = filters;
+    let query = `Select count(s.id) as length
+    From students s
+    Join classes c On c.id = s.class_id
+    Where 1 = 1`;
+
+    if(cluster) {
+        query = query + ` And s.class_id = ${cluster}`;
+    }
+
+    if(!isEmpty(musicality)) {
+        query = query + ` And s.musicality = ${musicality}`;
+    }
+
+    connect((connection) => {
+        connection.query(
+            query
+            , (err, rows, fields) => {
             
                 if (err) {
                 throw err;
@@ -56,5 +107,6 @@ const getStudents = ({}, callback) => {
 
 module.exports = {
     getUser,
-    getStudents
+    getStudents,
+    countStudents
 }
