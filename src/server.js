@@ -2,8 +2,9 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
+const pick = require('lodash/pick');
+const parallel = require('async/parallel');
 const mysql = require('mysql')
-
 const db = require('./db');
 
 // const PORT = normalizePort(process.env.OPENSHIFT_NODEJS_PORT || '3000');
@@ -49,27 +50,39 @@ app.get('/login/:username/:password', (req, res, next) => {
 });
 
 app.get('/students', (req, res) => {
-    const filters = {
-        pagesize: '10',
-        ...req.query,
-    };
+    const filters = pick(req.query, [
+        'page',
+        'pageSize', 
+        'cluster',
+        'musicality'
+    ]);
 
-    console.log('>>',filters);
     try {
-        db.getStudents(filters, (result) => {
-            if(result) {
-                res.send({
-                    ...filters,
-                    pageTotal: 2,
-                    data: result
-                });
+        parallel([
+            (callback) => {
+                db.getStudents(filters, (result) => {
+                    callback(null, {
+                        ...filters,
+                        data: result
+                    });
+            })},
+            (callback) => {
+                db.countStudents(filters, (result) => {
+                    callback(null, {length: result[0].length })
+                })
+            }
+        ], function(err, results) {
+            if(err) {
+                res.status(500).send({ err });
             } else {
-                res.send({ login: false });
+                res.send({
+                    ...results[0],
+                    ...results[1]
+                });
             }
         });
-        
     } catch(error) {
-        res.send({ error });
+        res.status(500).send({ error });
     }
 });
 
