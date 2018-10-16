@@ -26,7 +26,12 @@ const connect = (done) => {
     });
 }
 
-
+const responsesCallback = (err, rows, fields, callback) => {
+    if (err) {
+        throw err;
+    }
+    callback(rows);
+}
 
 const getUser = ({ username, password }, callback) => {
     connect((connection) => {
@@ -47,7 +52,9 @@ const getStudents = (filters, callback) => {
     Where 1 = 1`;
 
     if(cluster) {
-        query = query + ` And s.class_id = ${cluster}`;
+        const _classes = JSON.stringify(cluster).replace('[', '(').replace(']', ')');
+
+        query = query + ' And s.class_id in ' + _classes;
     }
 
     if(!isEmpty(musicality)) {
@@ -84,7 +91,9 @@ const countStudents = (filters, callback) => {
     Where 1 = 1`;
 
     if(cluster) {
-        query = query + ` And s.class_id = ${cluster}`;
+        const _classes = JSON.stringify(cluster).replace('[', '(').replace(']', ')');
+
+        query = query + ' And s.class_id in ' + _classes;
     }
 
     if(!isEmpty(musicality)) {
@@ -94,19 +103,21 @@ const countStudents = (filters, callback) => {
     connect((connection) => {
         connection.query(
             query
-            , (err, rows, fields) => {
-            
-                if (err) {
-                throw err;
-            }
-            
-            callback(rows);
-        });
+            , (err, rows, fields) => responsesCallback(err, rows, fields, callback));
     });
 };
+
+
+const getClusters = (callback) => {
+    connect((connection) => {
+        connection.query('Select Id as value, Value as text From classes Order By Id', 
+        (err, rows, fields) => responsesCallback(err, rows, fields, callback));
+    });
+}
 
 module.exports = {
     getUser,
     getStudents,
-    countStudents
+    countStudents,
+    getClusters
 }

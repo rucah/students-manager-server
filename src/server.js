@@ -56,6 +56,8 @@ app.get('/students', (req, res) => {
         'cluster',
         'musicality'
     ]);
+    // tweak so it works with single or multiple clusters
+    filters.cluster? filters.cluster = [...filters.cluster]: filters.cluster;
 
     try {
         parallel([
@@ -85,6 +87,29 @@ app.get('/students', (req, res) => {
         res.status(500).send({ error });
     }
 });
+
+app.get('/classes', (req, res) => {
+    try {
+        db.getClusters((result) => {
+            
+            res.send(result);
+        });
+
+    } catch (error) {
+        res.status(500).send({ error: error });
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
 
 app.listen(PORT, IP, console.log(`Server listening at port ${PORT}`));
 
