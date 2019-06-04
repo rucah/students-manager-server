@@ -1,11 +1,11 @@
 const express = require('express');
-const bodyParser = require('body-parser');
+const { urlencoded, json } =  require('body-parser');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
-const pick = require('lodash/pick');
-const parallel = require('async/parallel');
-const mysql = require('mysql')
-const db = require('./db');
+// import mysql from 'mysql';
+// import { getUser, getClusters } from './db';
+const modules = require('./data-modules');
+const business = require('./business-modules');
 
 // const PORT = normalizePort(process.env.OPENSHIFT_NODEJS_PORT || '3000');
 const PORT = normalizePort(process.env.PORT || process.env.OPENSHIFT_NODEJS_PORT ||'3000');
@@ -16,27 +16,28 @@ const corsOptions = {
     origin: '*',
     optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
 }
-
+var router = require('express').Router();
 const app = express();
 
 app.use(cors(corsOptions))
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json())
+app.use(urlencoded({ extended: false }));
+app.use(json())
 app.use(cookieParser())
 
-const pool = mysql.createPool({
-    connectionLimit: 10,
-    host: 'sql7.freesqldatabase.com',
-    user: 'sql7256433',
-    password: 'aZUlBF2199',
-    database: 'sql7256433'
-});
+// const pool = mysql.createPool({
+//     connectionLimit: 10,
+//     host: 'sql7.freesqldatabase.com',
+//     user: 'sql7256433',
+//     password: 'aZUlBF2199',
+//     database: 'sql7256433'
+// });
 
-app.get('/', (req, res) => res.send({ 'SUCESS': 'TRUE!' }));
+router.get('/', (req, res) => res.send({ 'SUCESS': 'TRUE!' }));
 
-app.get('/login/:username/:password', (req, res, next) => {
+router.post('/login', (req, res, next) => {
     try {
-        db.getUser(req.params, (result) => {
+        console.log('>>>MOVE IT', req);
+        modules.auth.getUser(req.body.params, (result) => {
             if (result) {
                 res.send({ login: true, ...result });
             } else {
@@ -49,68 +50,15 @@ app.get('/login/:username/:password', (req, res, next) => {
     }
 });
 
-app.get('/students', (req, res) => {
-    const filters = pick(req.query, [
-        'page',
-        'pageSize', 
-        'cluster',
-        'musicality'
-    ]);
-    // tweak so it works with single or multiple clusters
-    filters.cluster? filters.cluster = [...filters.cluster]: filters.cluster;
-
-    try {
-        parallel([
-            (callback) => {
-                db.getStudents(filters, (result) => {
-                    callback(null, {
-                        ...filters,
-                        data: result
-                    });
-            })},
-            (callback) => {
-                db.countStudents(filters, (result) => {
-                    callback(null, {length: result[0].length })
-                })
-            }
-        ], function(err, results) {
-            if(err) {
-                res.status(500).send({ err });
-            } else {
-                res.send({
-                    ...results[0],
-                    ...results[1]
-                });
-            }
-        });
-    } catch(error) {
-        res.status(500).send({ error });
-    }
-});
-
-app.get('/classes', (req, res) => {
-    try {
-        db.getClusters((result) => {
-            
-            res.send(result);
-        });
-
-    } catch (error) {
-        res.status(500).send({ error: error });
-    }
-});
+router.get('/students', (req, res) => business.students.getPaginatedStudents(req, res));
+router.get('/classes', (req, res) => business.clusters.getAllClusters(req, res));
 
 
 
 
 
 
-
-
-
-
-
-
+app.use('/api', router);
 app.listen(PORT, IP, console.log(`Server listening at port ${PORT}`));
 
 module.exports = app;

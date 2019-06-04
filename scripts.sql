@@ -30,7 +30,7 @@ CREATE TABLE `students` (
 ) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=latin1;
 
 
-INSERT INTO `sql7256433`.`classes`
+INSERT INTO `classes`
 (`id`,
 `value`)
 VALUES
@@ -40,3 +40,7 @@ VALUES
 (5,	'Figueira da Foz Adultos'),
 (4,	'Figueira da Foz: Infantil'),
 (6,	'Pampilhosa');
+
+
+alter table students add nickname varchar(250);
+alter table students add graduationId int;
