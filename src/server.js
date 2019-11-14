@@ -52,7 +52,7 @@ router.post('/login', (req, res, next) => {
 
 router.get('/students', (req, res) => business.students.getPaginatedStudents(req, res));
 router.get('/classes', (req, res) => business.clusters.getAllClusters(req, res));
-
+router.get('/grades', (req, res) => business.grades.getAllGrades(req, res));
 
 
 
